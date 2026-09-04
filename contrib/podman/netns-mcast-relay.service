@@ -1,0 +1,42 @@
+[Unit]
+Description=Network Namespace Multicast Relay
+Documentation=https://github.com/mortezaPRK/netns-mcast-relay/tree/main/contrib/podman
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+Environment=RELAY_SOCKET=/run/netns-mcast-relay/control.sock
+Environment=PODMAN_SOCKET=/run/podman/podman.sock
+Environment=PODMAN_API_VERSION=v1.0.0
+Environment=RELAY_ANNOTATION=io.github.mortezaprk.netns-mcast-relay
+Environment=RELAY_ANNOTATION_VALUE=true
+Environment=RECONCILE_ATTEMPTS=30
+Environment=RECONCILE_RETRY_SECONDS=1
+
+ExecStart=/usr/local/bin/relay \
+  --group=224.0.0.251:5353 \
+  --group=239.255.255.250:1900 \
+  --ns=/proc/1/ns/net \
+  --control-socket=${RELAY_SOCKET} \
+  --control-socket-group=netns-mcast-relay \
+  --control-socket-mode=0660
+ExecStartPost=/usr/local/libexec/netns-mcast-relay/reconcile-podman.sh
+
+Restart=on-failure
+RestartSec=5s
+Group=netns-mcast-relay
+RuntimeDirectory=netns-mcast-relay
+RuntimeDirectoryMode=0750
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/run/netns-mcast-relay
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_RAW
+AmbientCapabilities=CAP_SYS_ADMIN CAP_NET_RAW
+RestrictAddressFamilies=AF_UNIX AF_INET AF_NETLINK
+
+[Install]
+WantedBy=multi-user.target

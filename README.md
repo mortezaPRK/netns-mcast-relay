@@ -189,6 +189,12 @@ devices that reject off-link query sources. Both copies retain incoming TTL.
   - Either via `setcap cap_sys_admin,cap_net_raw+ep` (recommended)
   - Or run with sudo (not recommended)
 
+## Contrib
+
+- [`contrib/podman`](contrib/podman): OCI hook and systemd integration for
+  opted-in Podman containers, including relay restart reconciliation through
+  the Podman Unix socket.
+
 ## License
 
 [MIT](LICENSE)

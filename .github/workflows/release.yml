@@ -43,6 +43,14 @@ jobs:
       - name: Test
         run: go test ./...
 
+      - name: Validate contrib files
+        run: |
+          bash -n \
+            contrib/podman/netns-mcast-relay-hook.sh \
+            contrib/podman/reconcile-podman.sh
+          sed 's|@HOOK_PATH@|/usr/local/libexec/netns-mcast-relay/netns-mcast-relay-hook.sh|g' \
+            contrib/podman/netns-mcast-relay-hook.json.in | jq empty
+
       - name: Build release archives
         env:
           RELEASE_TAG: ${{ github.ref_name }}
@@ -61,6 +69,7 @@ jobs:
               ./cmd/relay
 
             cp LICENSE README.md "$package/"
+            cp -R contrib "$package/"
             tar -C staging -czf "dist/$archive" "${package#staging/}"
           done
 
