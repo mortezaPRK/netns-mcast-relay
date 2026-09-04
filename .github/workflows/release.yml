@@ -57,7 +57,7 @@ jobs:
             CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build \
               -trimpath \
               -ldflags="-s -w -buildid=" \
-              -o "$package/netns-mcast-relay" \
+              -o "$package/relay" \
               ./cmd/relay
 
             cp LICENSE README.md "$package/"
