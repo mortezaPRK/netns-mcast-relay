@@ -5,10 +5,10 @@ This example registers selected Podman container network namespaces with
 
 - an OCI `poststart`/`poststop` hook for container lifecycle changes;
 - a one-shot reconciler that restores registrations after relay restarts;
-- a hardened system service example.
+- a hardened system service template for a rootless Podman user.
 
 Copy these files and adapt paths, user/group ownership, socket locations, and
-hardening to the host. The defaults target rootful Podman.
+hardening to the host. The defaults target rootless Podman.
 
 ## Requirements
 
@@ -23,30 +23,39 @@ clear security boundary.
 
 ## Install
 
-Create the relay socket group and install the example files:
+Enable the rootless Podman user's API socket and lingering:
+
+```bash
+systemctl --user enable --now podman.socket
+sudo loginctl enable-linger "$USER"
+```
+
+Create the relay socket group, add the Podman user, and install the example
+files:
 
 ```bash
 sudo groupadd --system --force netns-mcast-relay
+sudo usermod --append --groups netns-mcast-relay "$USER"
 sudo install -m 0755 relay /usr/local/bin/relay
 sudo install -D -m 0755 netns-mcast-relay-hook.sh \
   /usr/local/libexec/netns-mcast-relay/netns-mcast-relay-hook.sh
 sudo install -D -m 0755 reconcile-podman.sh \
   /usr/local/libexec/netns-mcast-relay/reconcile-podman.sh
-sudo install -D -m 0644 netns-mcast-relay.service \
-  /etc/systemd/system/netns-mcast-relay.service
+sudo install -D -m 0644 'netns-mcast-relay@.service' \
+  '/etc/systemd/system/netns-mcast-relay@.service'
 sudo install -d -m 0755 /etc/containers/oci/hooks.d
 sed 's|@HOOK_PATH@|/usr/local/libexec/netns-mcast-relay/netns-mcast-relay-hook.sh|g' \
   netns-mcast-relay-hook.json.in | \
   sudo tee /etc/containers/oci/hooks.d/netns-mcast-relay.json >/dev/null
 ```
 
-Configure Podman to load `/etc/containers/oci/hooks.d`, then enable its rootful
-API socket and the relay:
+Configure the rootless Podman user to load `/etc/containers/oci/hooks.d`. After
+starting a new login session to acquire group membership, enable the relay
+instance named with that user's numeric UID:
 
 ```bash
-sudo systemctl enable --now podman.socket
 sudo systemctl daemon-reload
-sudo systemctl enable --now netns-mcast-relay.service
+sudo systemctl enable --now "netns-mcast-relay@$(id -u).service"
 ```
 
 Podman's implicit hook search paths are deprecated. Set `hooks_dir` explicitly
@@ -82,29 +91,19 @@ The hook registers new containers and removes stopped containers. On every
 relay start, `ExecStartPost` queries running containers through the Podman API,
 selects the same annotation, reads each current PID, and restores registrations.
 
-## Rootless Podman
+## Rootful Podman
 
-Enable the user's socket and lingering:
-
-```bash
-systemctl --user enable --now podman.socket
-sudo loginctl enable-linger USER
-sudo usermod --append --groups netns-mcast-relay USER
-```
-
-After the user starts a new login session, point the system service at that
-user's socket with a drop-in:
+Rootful Podman is not the default. To use it, enable the system socket and
+override the Podman socket path for instance `0`:
 
 ```ini
 [Service]
-Environment=PODMAN_SOCKET=/run/user/UID/podman/podman.sock
-SupplementaryGroups=PODMAN_SOCKET_GROUP
+Environment=PODMAN_SOCKET=/run/podman/podman.sock
 ```
 
-Run `sudo systemctl daemon-reload` and restart the relay after adding the
-drop-in. Replace `PODMAN_SOCKET_GROUP` with the group that owns the rootless
-Podman socket. The OCI hook runs as the Podman user, so that user must be able
-to traverse `/run/netns-mcast-relay` and write to `control.sock`.
+Save that drop-in under `netns-mcast-relay@0.service.d`, run `sudo systemctl
+daemon-reload`, then enable `podman.socket` and
+`netns-mcast-relay@0.service` as system units.
 
 ## Customize
 

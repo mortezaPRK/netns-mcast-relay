@@ -1,13 +1,13 @@
 [Unit]
-Description=Network Namespace Multicast Relay
+Description=Network Namespace Multicast Relay for rootless Podman UID %i
 Documentation=https://github.com/mortezaPRK/netns-mcast-relay/tree/main/contrib/podman
-After=network-online.target
-Wants=network-online.target
+After=network-online.target user@%i.service
+Wants=network-online.target user@%i.service
 
 [Service]
 Type=exec
 Environment=RELAY_SOCKET=/run/netns-mcast-relay/control.sock
-Environment=PODMAN_SOCKET=/run/podman/podman.sock
+Environment=PODMAN_SOCKET=/run/user/%i/podman/podman.sock
 Environment=PODMAN_API_VERSION=v1.0.0
 Environment=RELAY_ANNOTATION=io.github.mortezaprk.netns-mcast-relay
 Environment=RELAY_ANNOTATION_VALUE=true
@@ -34,8 +34,8 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/run/netns-mcast-relay
-CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_RAW
-AmbientCapabilities=CAP_SYS_ADMIN CAP_NET_RAW
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_RAW CAP_DAC_OVERRIDE
+AmbientCapabilities=CAP_SYS_ADMIN CAP_NET_RAW CAP_DAC_OVERRIDE
 RestrictAddressFamilies=AF_UNIX AF_INET AF_NETLINK
 
 [Install]

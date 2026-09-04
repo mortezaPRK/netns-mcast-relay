@@ -5,7 +5,7 @@
 set -euo pipefail
 
 readonly RELAY_SOCKET="${RELAY_SOCKET:-/run/netns-mcast-relay/control.sock}"
-readonly PODMAN_SOCKET="${PODMAN_SOCKET:-/run/podman/podman.sock}"
+readonly PODMAN_SOCKET="${PODMAN_SOCKET:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock}"
 readonly PODMAN_API_VERSION="${PODMAN_API_VERSION:-v1.0.0}"
 readonly RELAY_ANNOTATION="${RELAY_ANNOTATION:-io.github.mortezaprk.netns-mcast-relay}"
 readonly RELAY_ANNOTATION_VALUE="${RELAY_ANNOTATION_VALUE:-true}"
