@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "hook": {
+    "path": "@HOOK_PATH@"
+  },
+  "when": {
+    "annotations": {
+      "^io\\.github\\.mortezaprk\\.netns-mcast-relay$": "^true$"
+    }
+  },
+  "stages": [
+    "poststart",
+    "poststop"
+  ]
+}
